@@ -17,7 +17,7 @@ theme_set(
 pumpkins_pred_int <- read_rds("data/pumpkins_preds_int.rds")
 pumpkins_test <- read_csv("data/pumpkins_test.csv")
 
-pumpkin_color <- "#107D92"
+plot_color <- "#107D92"
 
 set.seed(99)
 pumpkins_plot <-
@@ -34,17 +34,20 @@ pumpkins_plot %>%
              ymax = .pred_upper)) +
   geom_point(size = 2.5,
              alpha = 0.15,
-             color = pumpkin_color) +
+             color = plot_color) +
   geom_abline(size = 1,
               linetype = "dashed",
               color = "gray") +
-  labs(title = glue::glue("A model without {color_text(\"**{workboots}**\", pumpkin_color)}"),
+  labs(title = glue::glue("A model without {color_text(\"**{workboots}**\", plot_color)}"),
        subtitle = "On its own, XGBoost can only generate point predictions",
        x = "Actual",
-       y = "Predicted")
+       y = "Predicted") +
+  expand_limits(x = c(5, 55),
+                y = c(5, 55))
 
 ggquicksave("plots/pumpkins_point.png")
 
+# plot with prediction interval
 pumpkins_plot %>%
   ggplot(aes(x = weight_lbs,
              y = .pred,
@@ -52,18 +55,20 @@ pumpkins_plot %>%
              ymax = .pred_upper)) +
   geom_point(size = 2.5,
              alpha = 0.15,
-             color = pumpkin_color) +
+             color = plot_color) +
   geom_errorbar(alpha = 0.15,
                 width = 0.75,
                 size = 0.75,
-                color = pumpkin_color) +
+                color = plot_color) +
   geom_abline(size = 1,
               linetype = "dashed",
               color = "gray") +
-  labs(title = glue::glue("A model with {color_text(\"**{workboots}**\", pumpkin_color)}"),
-       subtitle = glue::glue("With {color_text(\"**workboots**\", pumpkin_color)}, we can generate prediction intervals!"),
+  labs(title = glue::glue("A model with {color_text(\"**{workboots}**\", plot_color)}"),
+       subtitle = glue::glue("With {color_text(\"**workboots**\", plot_color)}, we can generate prediction intervals!"),
        x = "Actual",
-       y = "Predicted")
+       y = "Predicted") +
+  expand_limits(x = c(5, 55),
+                y = c(5, 55))
 
 ggquicksave("plots/pumpkins_interval.png")
 
