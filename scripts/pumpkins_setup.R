@@ -33,13 +33,10 @@ pumpkins_rec <-
   recipe(weight_lbs ~ ., data = pumpkins_train) %>%
   step_other(country) %>%
   step_mutate(year = as.factor(year)) %>%
-  step_dummy(year, country) 
+  step_dummy(year, country)
 
 pumpkins_spec <-
-  boost_tree(trees = tune(),
-             mtry = tune(),
-             sample_size = tune(),
-             tree_depth = tune()) %>%
+  boost_tree() %>%
   set_mode("regression") %>%
   set_engine("xgboost")
 
@@ -48,38 +45,12 @@ pumpkins_wf <-
   add_recipe(pumpkins_rec) %>%
   add_model(pumpkins_spec)
 
-# tuning
-set.seed(888)
-pumpkins_grid <-
-  grid_latin_hypercube(
-    trees(), 
-    finalize(mtry(), pumpkins_rec %>% prep() %>% bake(new_data = NULL)),
-    sample_size = sample_prop(),
-    tree_depth(),
-    size = 7
-  )
-
-set.seed(777)
-pumpkins_rs <- vfold_cv(pumpkins_train)
-
-set.seed(666)
-pumpkins_tuned <-
-  pumpkins_wf %>%
-  tune_grid(pumpkins_rs,
-            grid = pumpkins_grid)
-
-pumpkins_tuned %>%
-  collect_metrics()
-
-pumpkins_final <- 
-  pumpkins_wf %>%
-  finalize_workflow(pumpkins_tuned %>% select_best("rmse"))
-
 # -----------------------------workbootin'--------------------------------------
 
 # generate prediction interval
+set.seed(666)
 pumpkins_preds_int <-
-  pumpkins_final %>%
+  pumpkins_wf %>%
   predict_boots(
     n = 200,
     training_data = pumpkins_train,
