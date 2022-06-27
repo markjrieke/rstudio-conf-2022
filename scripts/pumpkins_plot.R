@@ -61,7 +61,7 @@ pumpkins_plot %>%
               linetype = "dashed",
               color = "gray") +
   labs(title = glue::glue("A model with {color_text(\"**{workboots}**\", pumpkin_color)}"),
-       subtitle = glue::glue("With {color_text(\"**{workboots}**\", pumpkin_color)}, we can generate prediction intervals!"),
+       subtitle = glue::glue("With {color_text(\"**workboots**\", pumpkin_color)}, we can generate prediction intervals!"),
        x = "Actual",
        y = "Predicted")
 
