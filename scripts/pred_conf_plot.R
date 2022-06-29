@@ -1,5 +1,5 @@
 # ----------------------------------setup---------------------------------------
-library(tidyverse)
+library(tidymodels)
 library(workboots)
 library(riekelib)
 library(patchwork)
@@ -14,11 +14,54 @@ theme_set(
           plot.subtitle = ggtext::element_markdown())
 )
 
-# ----------------------------------plot----------------------------------------
-ames_pred_int <- read_rds("https://github.com/markjrieke/workboots_support/raw/main/data/ames_boot_pred_int.rds")
-ames_conf_int <- read_rds("https://github.com/markjrieke/workboots_support/raw/main/data/ames_boot_conf_int.rds")
-ames_test <- read_csv("https://github.com/markjrieke/workboots_support/raw/main/data/ames_test.csv")
+# ----------------------------------workbootin'---------------------------------
 
+# setup data
+data("ames")
+set.seed(999)
+ames <- 
+  ames %>%
+  select(First_Flr_SF, Sale_Price) %>%
+  mutate(across(everything(), log10)) %>%
+  slice_sample(n = 200)
+
+# split into test/train
+set.seed(888)
+ames_split <- initial_split(ames)
+ames_train <- training(ames_split)
+ames_test <- testing(ames_split)
+
+# setup workflow
+ames_wf <-
+  workflow() %>%
+  add_recipe(recipe(Sale_Price ~ First_Flr_SF, data = ames_train)) %>%
+  add_model(linear_reg())
+
+# generate pred interval
+set.seed(777)
+ames_pred_int <-
+  ames_wf %>%
+  predict_boots(
+    n = 2000,
+    training_data = ames_train,
+    new_data = ames_test,
+    verbose = TRUE
+  )
+
+# generate conf interval
+# ~ fewer because I'm lazy & this is just for the plot ~
+set.seed(666)
+ames_conf_int <-
+  ames_wf %>%
+  predict_boots(
+    n = 200,
+    training_data = ames_train,
+    new_data = ames_test,
+    interval = "confidence",
+    verbose = TRUE
+  )
+
+# ----------------------------------plot----------------------------------------
 plot_color <- "#107D92"
 interval_color <- "#23A0A4"
 
@@ -32,14 +75,14 @@ pred_plot <-
   bind_cols(ames_test) %>%
   ggplot(aes(x = First_Flr_SF)) +
   geom_point(aes(y = Sale_Price),
-             size = 1.5,
+             size = 2.5,
              alpha = 0.15) +
   geom_line(aes(y = .pred),
             size = 1,
             color = plot_color) +
   geom_ribbon(aes(ymin = .pred_lower,
                   ymax = .pred_upper),
-              alpha = 0.15,
+              alpha = 0.25,
               fill = plot_color) +
   expand_limits(y = c(4.5, 6)) +
   theme(plot.subtitle = ggtext::element_markdown(family = "Lucida Console", size = 18)) +
@@ -54,14 +97,14 @@ conf_plot <-
   bind_cols(ames_test) %>%
   ggplot(aes(x = First_Flr_SF)) +
   geom_point(aes(y = Sale_Price),
-             size = 1.5,
+             size = 2.5,
              alpha = 0.15) +
   geom_line(aes(y = .pred),
             size = 1,
             color = plot_color) +
   geom_ribbon(aes(ymin = .pred_lower,
                   ymax = .pred_upper),
-              alpha = 0.15,
+              alpha = 0.25,
               fill = plot_color) +
   expand_limits(y = c(4.5, 6)) +
   theme(plot.subtitle = ggtext::element_markdown(family = "Lucida Console", size = 18)) +
