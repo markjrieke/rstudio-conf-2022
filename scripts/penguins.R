@@ -61,4 +61,36 @@ penguins_vi %>%
        y = NULL)
 
 ggquicksave("plots/penguins_vip.png")
-       
+
+# ----------------------------------preds---------------------------------------
+
+penguins_test <- readr::read_csv("https://raw.githubusercontent.com/markjrieke/workboots_support/main/data/penguins_test.csv")
+penguins_preds <- readr::read_rds("https://github.com/markjrieke/workboots_support/raw/main/data/penguins_pred_int.rds")
+
+penguins_preds %>%
+  summarise_predictions() %>%
+  bind_cols(penguins_test) %>%
+  mutate(across(c(.pred:.pred_upper, body_mass_g), ~.x/1000)) %>%
+  ggplot(aes(x = body_mass_g,
+             y = .pred,
+             ymin = .pred_lower,
+             ymax = .pred_upper)) +
+  geom_point(size = 2.5,
+             alpha = 0.25,
+             color = plot_color) +
+  geom_abline(size = 1,
+              linetype = "dashed",
+              color = "gray") +
+  geom_errorbar(alpha = 0.25,
+                width = 0.0625,
+                size = 0.75,
+                color = plot_color) +
+  scale_x_continuous(labels = scales::label_comma(accuracy = 1, suffix = "kg")) +
+  scale_y_continuous(labels = scales::label_comma(accuracy = 1, suffix = "kg")) +
+  labs(title = glue::glue("Predicting Palmer Penguin Pounds"),
+       subtitle = glue::glue("{color_text(\"**workboots**\", plot_color)} allows us to generate prediction intervals"),
+       x = "Actual Weight",
+       y = "Predicted Weight")
+
+ggquicksave("plots/penguins_preds.png")
+
